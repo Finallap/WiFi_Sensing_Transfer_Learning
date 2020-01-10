@@ -1,0 +1,6 @@
+*.pkl
+*.pyc
+.idea/
+*.txt
+*.csv
+tensorboard_log/
