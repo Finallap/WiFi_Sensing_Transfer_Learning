@@ -84,7 +84,7 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # 载入数据集
-    train_loader, test_loader, csi_train_label = load_data(CONFIG)
+    train_loader, test_loader, csi_train_label = load_data(CONFIG['data_path'],CONFIG)
 
     # 使用TensorBoard进行记录
     writer = SummaryWriter(CONFIG['tensorboard_log_path'])
