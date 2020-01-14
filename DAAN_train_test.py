@@ -1,6 +1,7 @@
 import torch
 import time
 import math
+import os
 import numpy as np
 import torch.optim as optim
 import torch.nn as nn
@@ -26,7 +27,7 @@ def print_learning_rate(optimizer):
         print(outputs)
 
 
-def train(epoch, model, source_loader, target_loader):
+def train(epoch, model, source_loader, target_loader, writer):
     # total_progress_bar = tqdm.tqdm(desc='Train iter', total=args.epochs)
     LEARNING_RATE = CONFIG['lr'] / math.pow((1 + 10 * (epoch - 1) / CONFIG['epochs']), 0.75)
     if CONFIG['diff_lr']:
@@ -43,9 +44,10 @@ def train(epoch, model, source_loader, target_loader):
             {'params': model.domain_classifier.parameters()},
             {'params': model.dcis.parameters()},
             {'params': model.source_fc.parameters(), 'lr': LEARNING_RATE},
-        ], lr=LEARNING_RATE / 10,  alpha=0.9, weight_decay=CONFIG['l2_decay'])
+        ], lr=LEARNING_RATE / 10, alpha=0.9, weight_decay=CONFIG['l2_decay'])
     else:
-        optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=CONFIG['momentum'], weight_decay=CONFIG['l2_decay'])
+        optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=CONFIG['momentum'],
+                              weight_decay=CONFIG['l2_decay'])
 
     # print_learning_rate(optimizer)
 
@@ -122,9 +124,13 @@ def train(epoch, model, source_loader, target_loader):
         # total_progress_bar.update(1)
     D_M = np.copy(d_m).item()
     D_C = np.copy(d_c).item()
+    writer.add_scalar('training loss', loss.item(), epoch, time.time())
+    writer.add_scalar('training soft loss', soft_loss.item(), epoch, time.time())
+    writer.add_scalar('training global loss', global_loss.item(), epoch, time.time())
+    writer.add_scalar('training local loss', local_loss.item(), epoch, time.time())
 
 
-def test(model, test_loader):
+def test(model, test_loader, writer):
     model.eval()
     test_loss = 0
     correct = 0
@@ -142,26 +148,32 @@ def test(model, test_loader):
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
             test_loss, correct, len(test_loader.dataset),
             100. * correct / len(test_loader.dataset)))
+        writer.add_scalar('validation acc', 100. * correct.__float__() / len(test_loader.dataset), epoch, time.time())
     return correct
 
+
 def load_data():
-    source_train_loader, source_test_loader, source_csi_train_label = load_csi_data.load_data(CONFIG['source_path'],CONFIG)
-    target_train_loader, target_test_loader, target_csi_train_label = load_csi_data.load_data(CONFIG['target_path'],
-                                                                                              CONFIG)
+    source_train_loader, source_test_loader, source_csi_train_label = load_csi_data.load_data(
+        os.path.join(CONFIG['dir_path'], CONFIG['source_name']), CONFIG)
+    target_train_loader, target_test_loader, target_csi_train_label = load_csi_data.load_data(
+        os.path.join(CONFIG['dir_path'], CONFIG['target_name']), CONFIG)
     return source_train_loader, target_train_loader, target_test_loader
+
 
 if __name__ == '__main__':
     model = DAAN.DAANNet(CONFIG).to(DEVICE)
     train_loader, unsuptrain_loader, test_loader = load_data()
+    writer = SummaryWriter(CONFIG['tensorboard_log_path'])
     correct = 0
     D_M = 0
     D_C = 0
     MU = 0
     for epoch in range(1, CONFIG['epochs'] + 1):
         train_loader, unsuptrain_loader, test_loader = load_data()
-        train(epoch, model, train_loader, unsuptrain_loader)
-        t_correct = test(model, test_loader)
+        train(epoch, model, train_loader, unsuptrain_loader, writer)
+        t_correct = test(model, test_loader, writer)
         if t_correct > correct:
             correct = t_correct
-        print("%s max correct:" % CONFIG['target_path'], correct.item())
-        print(CONFIG['source_path'], "to", CONFIG['target_path'])
+        print("%s max correct:" % CONFIG['target_name'], correct.item())
+        print(CONFIG['source_name'], "to", CONFIG['target_name'])
+    writer.close()
