@@ -52,7 +52,7 @@ def load_data(data_path,config):
     y_test = torch.from_numpy(y_test).long()
     test_dataset = TensorDataset(X_test, y_test)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=config['batch_size'], shuffle=True,
-                                               drop_last=False, pin_memory=config['pin_memory'],
+                                               drop_last=True, pin_memory=config['pin_memory'],
                                                num_workers=config['num_workers'])
 
     return train_loader, test_loader, csi_train_label
