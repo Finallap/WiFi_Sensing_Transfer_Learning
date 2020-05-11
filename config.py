@@ -6,8 +6,8 @@ CONFIG = {
     'num_workers': 4,
     'pin_memory': True,
     'batch_size': 32,
-    'epochs': 100,
-    'log_interval':10,
+    'epochs': 1000,
+    'log_interval':1,
     'lr': 1e-3,
     'momentum': .9,
     'l2_decay': 0.01,
@@ -18,9 +18,9 @@ CONFIG = {
     # 'input_feature': 270,
     'hidden_size': 300,
     'n_class': 6,
-    'model_type':'lstm',
+    'model_type':'conv1d',
     'model_save_path': 'model_conv.pkl',
-    'tensorboard_log_path': 'tensorboard_log/simple_lstm_withot_bottleneck_fc_lab',
+    'tensorboard_log_path': 'tensorboard_log/DAN_conv1d_lab_to_meeting_adam_source_test',
     'diff_lr':True,
     'gamma':1
 }
