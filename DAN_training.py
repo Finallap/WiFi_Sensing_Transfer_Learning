@@ -67,6 +67,11 @@ def train(model, optimizer, writer):
         loss = cls_loss + lambd * mmd_loss
         loss.backward()
         optimizer.step()
+
+        training_pred = src_pred.data.max(1)[1]  # get the index of the max log-probability
+        training_correct = training_pred.eq(src_label.data.view_as(training_pred)).cpu().sum()
+        writer.add_scalar('training acc', 100. * training_correct.__float__() / len(src_label), i, time.time())
+
         # if i % CONFIG['log_interval'] == 0:
         print('Train iter: {} [({:.0f}%)]\tLoss: {:.6f}\tsoft_Loss: {:.6f}\tmmd_Loss: {:.6f}'.format(
             i, 100. * i / CONFIG['epochs'], loss.item(), cls_loss.item(), mmd_loss.item()))
@@ -75,12 +80,13 @@ def train(model, optimizer, writer):
         writer.add_scalar('mmd loss', mmd_loss.item(), i, time.time())
 
         # if i % (CONFIG['log_interval'] * 20) == 0:
-        t_correct = test(model)
+        t_correct, t_loss = test(model)
         if t_correct > correct:
             correct = t_correct
         print('src: {} to tgt: {} max correct: {} max accuracy{: .2f}%\n'.format(
             CONFIG['source_name'], CONFIG['target_name'], correct, 100. * correct.__float__() / tgt_dataset_len))
         writer.add_scalar('validation acc', 100. * t_correct.__float__() / tgt_dataset_len, i, time.time())
+        writer.add_scalar('validation loss', t_loss, i, time.time())
 
 
 def test(model):
@@ -103,7 +109,7 @@ def test(model):
     print('\n{} set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
         CONFIG['target_name'], test_loss, correct, tgt_dataset_len,
         100. * correct.__float__() / tgt_dataset_len))
-    return correct
+    return correct, test_loss
 
 
 if __name__ == '__main__':

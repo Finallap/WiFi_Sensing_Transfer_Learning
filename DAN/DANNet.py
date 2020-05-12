@@ -17,7 +17,7 @@ class DANNet(nn.Module):
         if self.training == True:
             target = self.sharedNet(target)
             # loss += mmd.mmd_rbf_accelerate(source, target)
-            loss += mmd.mmd_rbf_noaccelerate(source, target)
+            loss += mmd.mmd_rbf_accelerate(source, target)
 
         source = self.cls_fc(source)
         # target = self.cls_fc(target)
@@ -43,17 +43,18 @@ class SharedNet(nn.Module):
                 self.bottleneck = nn.Linear(config['hidden_size'], 128)
         elif self.config['model_type'] == 'conv1d':
             # conv1d
+            # 输入的数据格式是（batch_size, word_vector, sequence_length）
             self.base_network = nn.Sequential(
-                nn.Conv1d(in_channels=180,out_channels=128, kernel_size=8, padding_mode='circular'),
+                nn.Conv1d(in_channels=180,out_channels=128, kernel_size=8, padding_mode='same'),
                 nn.BatchNorm1d(num_features = 128),
                 nn.ReLU(),
-                nn.Conv1d(in_channels=128, out_channels=256, kernel_size=5, padding_mode='circular'),
+                nn.Conv1d(in_channels=128, out_channels=256, kernel_size=5, padding_mode='same'),
                 nn.BatchNorm1d(num_features = 256),
                 nn.ReLU(),
-                nn.Conv1d(in_channels=256, out_channels=128, kernel_size=3, padding_mode='circular'),
+                nn.Conv1d(in_channels=256, out_channels=128, kernel_size=3, padding_mode='same'),
                 nn.BatchNorm1d(num_features = 128),
                 nn.ReLU(),
-                nn.AdaptiveAvgPool1d(output_size = 128)
+                nn.AdaptiveAvgPool1d(output_size = 1)
             )
         else:
             # conv

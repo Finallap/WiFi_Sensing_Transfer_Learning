@@ -22,7 +22,11 @@ def load_data(data_path,config):
         csi_train_data = np.zeros((sample_count, 1, config['sequence_max_len'], config['input_feature']))
         for i in range(sample_count):
             csi_train_data[i][0] = csi_train[i].reshape((csi_train[i].shape[0], csi_train[i].shape[1])).astype(np.float)
-    else:#lstm输入格式为3维
+    elif(config['model_type']=='conv1d'):#conv1d输入格式为3维
+        csi_train_data = np.zeros((sample_count, config['input_feature'], config['sequence_max_len']))
+        for i in range(sample_count):
+            csi_train_data[i] = csi_train[i].reshape((csi_train[i].shape[1], csi_train[i].shape[0])).astype(np.float)
+    elif (config['model_type'] == 'lstm'):#lstm输入格式为3维
         csi_train_data = np.zeros((sample_count, config['sequence_max_len'], config['input_feature']))
         for i in range(sample_count):
             csi_train_data[i] = csi_train[i].reshape((csi_train[i].shape[0], csi_train[i].shape[1])).astype(np.float)

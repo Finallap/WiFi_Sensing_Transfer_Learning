@@ -20,7 +20,7 @@ CONFIG = {
     'n_class': 6,
     'model_type':'conv1d',
     'model_save_path': 'model_conv.pkl',
-    'tensorboard_log_path': 'tensorboard_log/DAN_conv1d_lab_to_meeting_adam_source_test',
+    'tensorboard_log_path': 'tensorboard_log/DAN_conv1d_lab_to_meeting_adam_source_test_2',
     'diff_lr':True,
     'gamma':1
 }
