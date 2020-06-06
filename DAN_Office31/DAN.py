@@ -8,8 +8,8 @@ import torch.optim as optim
 from torch.autograd import Variable
 import os
 import math
-from DAN_Office10 import data_loader
-from DAN_Office10 import ResNet as models
+from DAN_Office31 import data_loader
+from DAN_Office31 import ResNet as models
 from torch.utils import model_zoo
 from torch.utils.tensorboard import SummaryWriter
 

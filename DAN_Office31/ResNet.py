@@ -1,7 +1,7 @@
 import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo
-from DAN_Office10 import mmd
+from DAN_Office31 import mmd
 import torch
 
 
