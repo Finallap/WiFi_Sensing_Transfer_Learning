@@ -27,7 +27,8 @@ class SharedNet(nn.Module):
         self.config = config
         pretrained_model = torch.load(config['model_save_path'])
         self.base_network = pretrained_model.base_network
-        self.bottleneck = pretrained_model.bottleneck
+        if self.config['model_type'] != 'conv1d':
+            self.bottleneck = pretrained_model.bottleneck
 
     def forward(self, input):
         # lstm
