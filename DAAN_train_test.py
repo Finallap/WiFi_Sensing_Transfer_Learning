@@ -100,12 +100,14 @@ def train(epoch, model, source_loader, target_loader, writer):
             tmpd_c += 2 * (1 - 2 * (loss_si + loss_ti))
         tmpd_c /= CONFIG['n_class']
 
-        d_c = d_c + tmpd_c.cpu().item()
+        # d_c = d_c + tmpd_c.cpu().item()
+        d_c = d_c + tmpd_c.item()
 
         global_loss = 0.05 * (err_s_domain + err_t_domain)
         local_loss = 0.01 * (loss_s + loss_t)
 
-        d_m = d_m + 2 * (1 - 2 * global_loss.cpu().item())
+        # d_m = d_m + 2 * (1 - 2 * global_loss.cpu().item())
+        d_m = d_m + 2 * (1 - 2 * global_loss.item())
 
         join_loss = (1 - MU) * global_loss + MU * local_loss
         soft_loss = F.nll_loss(F.log_softmax(s_output, dim=1), source_label)
@@ -142,7 +144,8 @@ def test(model, test_loader, writer):
             test_loss += F.nll_loss(F.log_softmax(s_output, dim=1), target,
                                     size_average=False).item()  # sum up batch loss
             pred = s_output.data.max(1)[1]  # get the index of the max log-probability
-            correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+            # correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+            correct += pred.eq(target.data.view_as(pred)).sum()
 
         test_loss /= len(test_loader.dataset)
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
@@ -161,7 +164,9 @@ def load_data():
 
 
 if __name__ == '__main__':
+    os.environ["CUDA_VISIBLE_DEVICES"] = '0'
     model = DAAN.DAANNet(CONFIG).to(DEVICE)
+    print(model)
     train_loader, unsuptrain_loader, test_loader = load_data()
     writer = SummaryWriter(CONFIG['tensorboard_log_path'])
     correct = 0
@@ -169,7 +174,6 @@ if __name__ == '__main__':
     D_C = 0
     MU = 0
     for epoch in range(1, CONFIG['epochs'] + 1):
-        train_loader, unsuptrain_loader, test_loader = load_data()
         train(epoch, model, train_loader, unsuptrain_loader, writer)
         t_correct = test(model, test_loader, writer)
         if t_correct > correct:
