@@ -41,7 +41,8 @@ class DAANNet(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.LeakyReLU(),
         )
-        self.bottleneck = nn.Linear(config['batch_size'] * 810, 128)
+        # self.bottleneck = nn.Linear(config['batch_size'] * 810, 128)
+        self.bottleneck = nn.Linear(config['batch_size'] * 900, 128)
 
         # lstm
         # self.bidirectional = True
