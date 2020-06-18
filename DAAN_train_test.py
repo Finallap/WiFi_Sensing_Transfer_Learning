@@ -11,6 +11,7 @@ import tqdm
 import torch.nn.functional as F
 import model.DAAN as DAAN
 import data_loader_preprocessing.load_csi_data as load_csi_data
+import model.Pre_Training_DAAN as Pre_Training_DAAN
 
 arg = CONFIG
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -165,7 +166,8 @@ def load_data():
 
 if __name__ == '__main__':
     os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-    model = DAAN.DAANNet(CONFIG).to(DEVICE)
+    # model = DAAN.DAANNet(CONFIG).to(DEVICE)
+    model = Pre_Training_DAAN.DAANNet(CONFIG).to(DEVICE)
     print(model)
     train_loader, unsuptrain_loader, test_loader = load_data()
     writer = SummaryWriter(CONFIG['tensorboard_log_path'])
