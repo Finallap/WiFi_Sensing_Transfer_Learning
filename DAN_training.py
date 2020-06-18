@@ -12,28 +12,23 @@ from DAN import DANNet as models
 from torch.utils import model_zoo
 from config import CONFIG
 from torch.utils.tensorboard import SummaryWriter
+from DAN import pre_training_model_loader as pre_training_model
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 cuda = torch.cuda.is_available()
+
+
 # torch.manual_seed(1)
 # if cuda:
 #     torch.cuda.manual_seed(1)
 
-src_loader, _, _ = load_csi_data.load_data(
-    os.path.join(CONFIG['dir_path'], CONFIG['source_name']), CONFIG)
-tgt_train_loader, tgt_test_loader, _ = load_csi_data.load_data(
-    os.path.join(CONFIG['dir_path'], CONFIG['target_name']), CONFIG)
-
-src_dataset_len = len(src_loader.dataset)
-tgt_dataset_len = len(tgt_test_loader.dataset)
-src_loader_len = len(src_loader)
-tgt_loader_len = len(tgt_train_loader)
-
-
-def train(model, optimizer, writer):
+def train(src_loader, tgt_train_loader, tgt_test_loader, model, optimizer, writer):
     src_iter = iter(src_loader)
     tgt_iter = iter(tgt_train_loader)
+    src_dataset_len = len(src_loader.dataset)
+    tgt_dataset_len = len(tgt_test_loader.dataset)
+
     correct = 0
     for i in range(1, CONFIG['epochs'] + 1):
         model.train()
@@ -80,7 +75,7 @@ def train(model, optimizer, writer):
         writer.add_scalar('mmd loss', mmd_loss.item(), i, time.time())
 
         # if i % (CONFIG['log_interval'] * 20) == 0:
-        t_correct, t_loss = test(model)
+        t_correct, t_loss = test(tgt_test_loader, model)
         if t_correct > correct:
             correct = t_correct
         print('src: {} to tgt: {} max correct: {} max accuracy{: .2f}%\n'.format(
@@ -89,7 +84,8 @@ def train(model, optimizer, writer):
         writer.add_scalar('validation loss', t_loss, i, time.time())
 
 
-def test(model):
+def test(tgt_test_loader, model):
+    tgt_dataset_len = len(tgt_test_loader.dataset)
     model.eval()
     test_loss = 0
     correct = 0
@@ -113,12 +109,19 @@ def test(model):
 
 
 if __name__ == '__main__':
-    model = models.DANNet(CONFIG)
-    # optimizer = optim.RMSprop(model.parameters(), lr=CONFIG['lr'], alpha=0.9, weight_decay=CONFIG['l2_decay'])
-    optimizer = optim.Adam(model.parameters(), lr=CONFIG['lr'], weight_decay=CONFIG['l2_decay'])
+    os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+    src_loader, _, _ = load_csi_data.load_data(
+        os.path.join(CONFIG['dir_path'], CONFIG['source_name']), CONFIG)
+    tgt_train_loader, tgt_test_loader, _ = load_csi_data.load_data(
+        os.path.join(CONFIG['dir_path'], CONFIG['target_name']), CONFIG)
+
+    model = pre_training_model.DANNet(CONFIG)
+    # model = models.DANNet(CONFIG)
+    optimizer = optim.RMSprop(model.parameters(), lr=CONFIG['lr'], alpha=0.9, weight_decay=CONFIG['l2_decay'])
+    # optimizer = optim.Adam(model.parameters(), lr=CONFIG['lr'], weight_decay=CONFIG['l2_decay'])
     print(model)
     if cuda:
         model.cuda()
     writer = SummaryWriter(CONFIG['tensorboard_log_path'])
-    train(model, optimizer, writer)
+    train(src_loader, tgt_train_loader,tgt_test_loader,model, optimizer, writer)
     writer.close()
