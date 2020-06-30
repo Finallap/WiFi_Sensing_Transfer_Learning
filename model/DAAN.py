@@ -26,35 +26,37 @@ class DAANNet(nn.Module):
     def __init__(self, config):
         super(DAANNet, self).__init__()
         self.config = config
-        # conv
-        self.sharedNet = nn.Sequential(
-            nn.Conv2d(1, 8, kernel_size=3),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.LeakyReLU(),
-            nn.Conv2d(8, 16, kernel_size=3),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.LeakyReLU(),
-            nn.Conv2d(16, 32, kernel_size=3),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.LeakyReLU(),
-            nn.Conv2d(32, 64, kernel_size=3),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.LeakyReLU(),
-        )
-        # self.bottleneck = nn.Linear(config['batch_size'] * 810, 128)
-        self.bottleneck = nn.Linear(config['batch_size'] * 900, 128)
+        self.sharedNet = None
 
-        # lstm
-        # self.bidirectional = True
-        # self.num_layers = 2
-        # self.sharedNet = nn.LSTM(input_size=config['input_feature'], hidden_size=config['hidden_size'],
-        #                           num_layers=self.num_layers, bidirectional=self.bidirectional,
-        #                           dropout=0.5, batch_first=True)
-        # self.bottleneck = nn.Linear(config['hidden_size'], 128)
-        # if self.bidirectional:
-        #     self.bottleneck = nn.Linear(config['hidden_size'] * 2, 128)
-        # else:
-        #     self.bottleneck = nn.Linear(config['hidden_size'], 128)
+        if self.config['model_type'] == 'conv':
+            self.sharedNet = nn.Sequential(
+                nn.Conv2d(1, 8, kernel_size=3),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.LeakyReLU(),
+                nn.Conv2d(8, 16, kernel_size=3),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.LeakyReLU(),
+                nn.Conv2d(16, 32, kernel_size=3),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.LeakyReLU(),
+                nn.Conv2d(32, 64, kernel_size=3),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.LeakyReLU(),
+            )
+            # self.bottleneck = nn.Linear(config['batch_size'] * 810, 128)
+            self.bottleneck = nn.Linear(config['batch_size'] * 900, 128)
+
+        elif self.config['model_type'] == 'lstm':
+            self.bidirectional = True
+            self.num_layers = 2
+            self.sharedNet = nn.LSTM(input_size=config['input_feature'], hidden_size=config['hidden_size'],
+                                      num_layers=self.num_layers, bidirectional=self.bidirectional,
+                                      dropout=0.5, batch_first=True)
+            self.bottleneck = nn.Linear(config['hidden_size'], 128)
+            if self.bidirectional:
+                self.bottleneck = nn.Linear(config['hidden_size'] * 2, 128)
+            else:
+                self.bottleneck = nn.Linear(config['hidden_size'], 128)
 
         self.source_fc = nn.Linear(128, config['n_class'])
         self.softmax = nn.Softmax(dim=1)
@@ -85,19 +87,20 @@ class DAANNet(nn.Module):
             self.dcis.add_module('dci_' + str(i), self.dci[i])
 
     def forward(self, source, target, s_label, DEV, alpha=0.0):
-        # conv
-        source_share = self.sharedNet(source)
-        source_share = source_share.view(self.config['batch_size'], -1)
-        source_share = F.relu(self.bottleneck(source_share))
-        target = self.sharedNet(target)
-        target = target.view(self.config['batch_size'], -1)
-        target = F.relu(self.bottleneck(target))
-
-        # lstm
-        # source_share, _  = self.sharedNet(source)
-        # source_share = self.bottleneck(source_share[:, -1, :])
-        # target, _ = self.sharedNet(target)
-        # target = self.bottleneck(target[:, -1, :])
+        if self.config['model_type'] == 'conv':
+            # conv
+            source_share = self.sharedNet(source)
+            source_share = source_share.view(self.config['batch_size'], -1)
+            source_share = F.relu(self.bottleneck(source_share))
+            target = self.sharedNet(target)
+            target = target.view(self.config['batch_size'], -1)
+            target = F.relu(self.bottleneck(target))
+        elif self.config['model_type'] == 'lstm':
+            # lstm
+            source_share, _  = self.sharedNet(source)
+            source_share = self.bottleneck(source_share[:, -1, :])
+            target, _ = self.sharedNet(target)
+            target = self.bottleneck(target[:, -1, :])
 
         source = self.source_fc(source_share)
         p_source = self.softmax(source)
